@@ -1,4 +1,5 @@
 import mysql.connector
+import os
 
 # Database connection function
 def connect_to_db():
@@ -107,6 +108,25 @@ def insert_dog(staff_id, name, breed, age, arrival_date, spayed_neutered, adopta
 
     db.commit()
     print(f"Inserted dog record for {name} and registered by staff ID {staff_id}")
+    cursor.close()
+    db.close()
+
+#insert new shelter
+def insert_shelter(shelter_name, shelter_address, shelter_phone_number ):
+    db = connect_to_db()
+    cursor = db.cursor()
+
+    # Insert dog record
+    add_shelter = """
+    INSERT INTO Shelter (name, address, phoneNumber) 
+    VALUES (%s, %s, %s)
+    """
+    cursor.execute(add_shelter, (shelter_name, shelter_address, shelter_phone_number))
+
+    shelter_id = cursor.lastrowid 
+
+    db.commit()
+    print(f"Inserted new shelter record for {shelter_name}, with new shelterID: {shelter_id}")
     cursor.close()
     db.close()
 
@@ -369,6 +389,23 @@ def insert_medical_procedure(dog_id, procedure_date, type_of_procedure):
     cursor.close()
     db.close()
 
+# Insert adopter
+def insert_adopter(shelter_id, adopter_SSN, adopter_name, adopter_address, adopter_phone_number):
+    db = connect_to_db()
+    cursor = db.cursor()
+    
+    add_adopter = """
+    INSERT INTO Adopter (shelterID, SSN, name, phoneNumber, address) 
+    VALUES (%s, %s, %s, %s)
+    """
+    cursor.execute(add_adopter, (shelter_id, adopter_SSN, adopter_name, adopter_address, adopter_phone_number))
+    
+    db.commit()
+    print(f"Inserted adoption details for adopter {adopter_name}")
+    cursor.close()
+    db.close()
+
+    
 # Delete a specific vaccine record
 def delete_vaccine(vaccine_id):
     db = connect_to_db()
@@ -392,6 +429,38 @@ def delete_medical_procedure(procedure_id):
     
     db.commit()
     print(f"Deleted medical procedure ID {procedure_id}")
+    cursor.close()
+    db.close()
+
+# Delete a specific shelter
+def delete_shelter(shelter_id):
+    db = connect_to_db()
+    cursor = db.cursor()
+
+    delete_is_responsible_for = "DELETE FROM Is_responsible_for WHERE shelterID = %s"
+    cursor.execute(delete_is_responsible_for, (shelter_id,))
+    
+    delete_shelter = "DELETE FROM Shelter WHERE shelterID = %s"
+    cursor.execute(delete_shelter, (shelter_id,))
+    
+    db.commit()
+    print(f"Deleted shelter ID {shelter_id}")
+    cursor.close()
+    db.close()
+
+# Delete a specific staff
+def delete_staff(staff_id):
+    db = connect_to_db()
+    cursor = db.cursor()
+
+    delete_registers = "DELETE FROM Registers WHERE staffID = %s"
+    cursor.execute(delete_registers, (staff_id,))
+    
+    delete_staff = "DELETE FROM Staff WHERE staffID = %s"
+    cursor.execute(delete_staff, (staff_id,))
+    
+    db.commit()
+    print(f"Deleted staff ID {staff_id}")
     cursor.close()
     db.close()
 
@@ -577,6 +646,45 @@ def update_medical_records(dog_id):
     cursor.close()
     db.close()
 
+# Update shelter details
+def update_shelter(shelter_id):
+    db = connect_to_db()
+    cursor = db.cursor()
+
+    print("\nWhat would you like to update?")
+    print("1. Name")
+    print("2. Address")
+    print("3. Phone Number")
+
+    choice = input("Enter your choice: ")
+
+    if choice == '1':
+        # Update name
+        update_shelter_name = "UPDATE Shelter SET name = %s WHERE shelterID = %s"
+        cursor.execute(update_shelter_name, (shelter_id))
+        db.commit()
+        print(f"Updated name for shelter ID {shelter_id}.")
+
+    elif choice == '2':
+        # Update address
+        update_shelter_address = "UPDATE Shelter SET address = %s WHERE shelterID = %s"
+        cursor.execute(update_shelter_address, (shelter_id))
+        db.commit()
+        print(f"Updated address for shelter ID {shelter_id}.")
+
+    if choice == '3':
+        # Update phone number
+        update_shelter_phone_number = "UPDATE Shelter SET phoneNumber = %s WHERE shelterID = %s"
+        cursor.execute(update_shelter_phone_number, (shelter_id))
+        db.commit()
+        print(f"Updated phone number for shelter ID {shelter_id}.")
+    else:
+        print("Invalid choice. No changes made.")
+    
+    cursor.close()
+    db.close()
+
+
 
 def main():
     # Select or add a staff member at the beginning
@@ -596,11 +704,12 @@ def main():
         print("10. Print Dogs Registered By Staff Info")
         print("11. Update Shelter")
         print("12. Delete Shelter")
-        print("13. Add Adopter")
-        print("14. Modify Dog Status")
-        print("15. Get Most Recent Dog Status")
-        print("16. Print Available Dogs")
-        print("17. Exit")
+        print("13. Add Shelter")
+        print("14. Add Adopter")
+        print("15. Modify Dog Status")
+        print("16. Get Most Recent Dog Status")
+        print("17. Print Available Dogs")
+        print("18. Exit")
         
         choice = input("Enter your choice: ")
         
@@ -667,10 +776,37 @@ def main():
             dog_id = int(input("Enter dog ID to update medical records: "))
             update_medical_records(dog_id)
         
+        elif choice == '9':
+            staff_id = int(input("Enter staff ID to delete:"))
+            delete_staff(staff_id)
+        
         elif choice == '10':
             print_dogs_registered_by_staff()
+
+        elif choice == '11':
+            shelter_id = int(input("Enter shelter ID to update shelter details: "))
+            update_shelter(shelter_id)
         
+        elif choice == '12':
+            shelter_id = int(input("Enter shelter ID to delete: "))
+            delete_shelter(shelter_id)
+
+        elif choice == '13': 
+            shelter_name = int(input("Enter shelter name: "))
+            shelter_address = int(input("Enter shelter address: "))
+            shelter_phone_number = int(input("Enter shelter phone number: "))
+            insert_shelter(shelter_name, shelter_address, shelter_phone_number)
+
         elif choice == '14':
+            shelter_id = int(input("Enter shelter ID that adopter is being added to: "))
+            adopter_ssn = int(input("Enter adopter SSN: "))
+            adopter_name = int(input("Enter adopter name: "))
+            adopter_address = int(input("Enter adopter address: "))
+            adopter_phone_number = (int(input("Enter adopter phone number: ")))
+            insert_adopter(shelter_id, adopter_ssn, adopter_name, adopter_address, adopter_phone_number)
+
+            
+        elif choice == '15':
             dog_id = int(input("Enter dog ID to modify status: "))
             status_type = input("Enter status type (euthanized/natural death/adopted): ").lower()
             
@@ -690,17 +826,17 @@ def main():
                 adopter_address = input("Enter adopter address: ")
                 modify_dog_status(dog_id, status_type, adoption_type=adoption_type, adopter_ssn=adopter_ssn, adopter_name=adopter_name, adopter_phone=adopter_phone, adopter_address=adopter_address)
 
-        elif choice == '15':
+        elif choice == '16':
             dog_id = int(input("Enter dog ID to view most recent status: "))
             get_most_recent_status(dog_id)
         
-        elif choice == '16':
+        elif choice == '17':
             print_available_dogs()
         
-        elif choice == '17':
+        elif choice == '18':
             print("Exiting...")
             break
-        
+    
         # ... other options remain the same
         
         else:
@@ -709,4 +845,3 @@ def main():
 # Run the terminal interface
 if __name__ == "__main__":
     main()
-
