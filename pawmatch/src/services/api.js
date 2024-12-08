@@ -79,4 +79,12 @@ export const getDogsWithMedicalHistory = async () => {
     }
   };
 
-  
+  export const deleteDog = async (dogID) => {
+    try {
+      await axios.delete(`/api/dogs/${dogID}`);
+    } catch (error) {
+      console.error('Error deleting dog:', error);
+      throw error;
+    }
+  };
+   

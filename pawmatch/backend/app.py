@@ -24,26 +24,42 @@ def connect_to_db():
 # Define the API route to fetch dog stats
 @app.route('/api/dog-stats', methods=['GET'])
 def dog_stats():
-    # Connect to the database
     db = connect_to_db()
     cursor = db.cursor()
 
     try:
         # Fetch stats like total dogs, adopted dogs, available dogs
-        cursor.execute("SELECT COUNT(*) FROM dogs")
+        cursor.execute("SELECT COUNT(*) FROM Dog")
         total_dogs = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM dogs WHERE status = 'adopted'")
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM Adoption_Record ar
+            JOIN Status_Record sr ON sr.recordID = ar.recordID
+        """)
         adopted_dogs = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM dogs WHERE status = 'available'")
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM Availability_Record ar
+            JOIN Status_Record sr ON sr.recordID = ar.recordID
+        """)
         available_dogs = cursor.fetchone()[0]
+
+        # Calculate all overdue vaccines (vaccineDate older than 1 year)
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM Vaccine
+            WHERE vaccineDate <= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+        """)
+        vaccines_due = cursor.fetchone()[0]
 
         # Return the stats as a JSON response
         stats = {
             "totalDogs": total_dogs,
             "adoptedDogs": adopted_dogs,
-            "availableDogs": available_dogs
+            "availableDogs": available_dogs,
+            "vaccinesDue": vaccines_due
         }
 
         return jsonify(stats)
@@ -54,6 +70,7 @@ def dog_stats():
     finally:
         cursor.close()
         db.close()
+
 
 # Route to fetch the list of dogs
 @app.route('/api/dogs', methods=['GET'])
@@ -215,6 +232,55 @@ def search_dogs():
     db.close()
 
     return jsonify(dogs)
+
+@app.route('/api/dashboard-stats', methods=['GET'])
+def get_dashboard_stats():
+    db = connect_to_db()
+    cursor = db.cursor(dictionary=True)
+
+    try:
+        # Fetch total dogs
+        cursor.execute("SELECT COUNT(*) as totalDogs FROM Dog")
+        total_dogs = cursor.fetchone()['totalDogs']
+
+        # Fetch adopted dogs
+        cursor.execute("""
+            SELECT COUNT(*) as adoptedDogs
+            FROM Status_Record sr
+            JOIN Adoption_Record ar ON sr.recordID = ar.recordID
+        """)
+        adopted_dogs = cursor.fetchone()['adoptedDogs']
+
+        # Fetch available dogs
+        cursor.execute("""
+            SELECT COUNT(*) as availableDogs
+            FROM Status_Record sr
+            JOIN Availability_Record ar ON sr.recordID = ar.recordID
+        """)
+        available_dogs = cursor.fetchone()['availableDogs']
+
+        # Fetch dogs with vaccines due
+        cursor.execute("""
+            SELECT COUNT(*) as vaccinesDue
+            FROM Vaccine
+            WHERE vaccineDate < CURDATE()
+        """)
+        vaccines_due = cursor.fetchone()['vaccinesDue']
+
+        stats = {
+            "totalDogs": total_dogs,
+            "adoptedDogs": adopted_dogs,
+            "availableDogs": available_dogs,
+            "vaccinesDue": vaccines_due
+        }
+
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        db.close()
+
 
 if __name__ == '__main__':
     app.run(debug=True)

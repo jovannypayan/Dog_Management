@@ -1,78 +1,69 @@
-// src/pages/DashboardPage.js
 import React, { useState, useEffect } from 'react';
 import { fetchDogStats } from '../services/api'; // Import the API function
 import '../styles/DashboardPage.css';
 
 const DashboardPage = () => {
-  const [dogStats, setDogStats] = useState({
+  const [stats, setStats] = useState({
     totalDogs: 0,
     adoptedDogs: 0,
     availableDogs: 0,
+    vaccinesDue: 0,
   });
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch data from the backend API
+  // Fetch dashboard statistics
   useEffect(() => {
-    const getStats = async () => {
+    const fetchStats = async () => {
       try {
-        const stats = await fetchDogStats(); // Call the API function
-        setDogStats(stats); // Set the state with the data received
-      } catch (err) {
-        setError('Failed to load dog stats.'); // Handle error if API call fails
-      } finally {
-        setLoading(false); // Stop loading once the data is fetched or failed
+        const statsData = await fetchDogStats(); // Use the fetchDogStats API function
+        setStats(statsData);
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+        setError("Failed to load statistics");
       }
     };
 
-    getStats();
-  }, []); // Empty array to call once on component mount
-
-  if (loading) {
-    return <div>Loading...</div>; // Show loading message while data is being fetched
-  }
-
-  if (error) {
-    return <div>{error}</div>; // Show error message if API call fails
-  }
+    fetchStats();
+  }, []);
 
   return (
     <div className="dashboard">
       <h1>Welcome to the PawMatch Dashboard!</h1>
-      
+
+      {error && <p className="error">{error}</p>}
+
       <div className="stats">
-        <h2>Dog Shelter Stats</h2>
+        <h2>Shelter Overview</h2>
         <div className="stat-card">
           <h3>Total Dogs</h3>
-          <p>{dogStats.totalDogs}</p>
+          <p>{stats.totalDogs}</p>
         </div>
         <div className="stat-card">
           <h3>Adopted Dogs</h3>
-          <p>{dogStats.adoptedDogs}</p>
+          <p>{stats.adoptedDogs}</p>
         </div>
         <div className="stat-card">
           <h3>Available Dogs</h3>
-          <p>{dogStats.availableDogs}</p>
+          <p>{stats.availableDogs}</p>
+        </div>
+        <div className="stat-card">
+          <h3>Vaccines Due</h3>
+          <p>{stats.vaccinesDue}</p>
         </div>
       </div>
-      
+
       <div className="action-section">
-        <h2>Recent Activity</h2>
+        <h2>Staff Actions</h2>
         <div className="actions">
           <div className="action-item">
-            <h3>Upcoming Medical Procedures</h3>
-            <p>Check upcoming medical procedures for dogs.</p>
+            <h3>Check Vaccines</h3>
+            <p>Review dogs with overdue vaccines.</p>
           </div>
           <div className="action-item">
-            <h3>Pending Adoption Requests</h3>
-            <p>View and approve recent adoption requests.</p>
+            <h3>Manage Adoptions</h3>
+            <p>Track adoption progress and updates.</p>
           </div>
         </div>
-      </div>
-      
-      <div className="staff-section">
-        <h2>Staff Management</h2>
-        <p>Manage staff and check who is assigned to the shelter.</p>
       </div>
     </div>
   );
